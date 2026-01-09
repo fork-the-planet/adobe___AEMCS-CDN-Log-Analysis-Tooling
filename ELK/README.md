@@ -9,16 +9,41 @@ ELK stands for three popular projects: Elasticsearch, Logstash, and Kibana. The 
 To quickstart the analysis, the following dashboards are provided:
 
 - **CDN Cache Hit Ratio**: provides insights into the total cache hit ratio and total count of requests by HIT, PASS, and MISS status. Also provides top HIT, PASS, and MISS URLs.
-- **CDN Traffic Dashboard**: provides insights into the traffic via CDN and Origin request rate, 4xx and 5xx error rates, and non-cached requests. Also provides max CND and Origin requests per second per client IP address and more insights to optimize the CDN configurations.
+- **CDN Traffic Dashboard**: provides insights into the traffic via CDN and Origin request rate, 4xx and 5xx error rates, and non-cached requests. Also provides max CDN and Origin requests per second per client IP address and more insights to optimize the CDN configurations.
 - **WAF Dashboard**: provides insights via analyzed, flagged, and blocked requests. Also provides top attacks by WAF Flag ID, top 100 attackers by client IP, country, and user agent and more insights to optimize the WAF configurations.
+- **Content Request Dashboard**: provides insights into the requests which count toward [content requests](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/using-cloud-manager/content-requests) for license measurement purposes.
+    - Please note that under extremely heavy load, not all requests are added to the logs available for download from Cloud Manager.  In this situation, the Content Request Dashboard may not provide accurate counts.
+    - Also note that if a [customer-managed CDN](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/content-delivery/cdn#point-to-point-CDN) is put in front of the default CDN that comes with AEMCS, then this dashboard only shows the portion of content requests which are not cached at the outer CDN and the customer is responsible for self-reporting for license measurement purposes.
 
-However, you can enhance and create additional dashboards to gain further insights and optimize the CDN configurations.
+You can enhance and create additional dashboards to gain further insights and optimize the CDN configurations.
 
 ## Prerequisites
 
 - Install [Docker](https://docs.docker.com/engine/install/) and increase the memory limit (`Preferences -> Resources -> Advanced`) to at least 4 GB.
 
 - Download the [CDN logs](https://experienceleague.adobe.com/docs/experience-manager-cloud-service/content/implementing/using-cloud-manager/manage-logs.html?lang=en) you would like to analyze.
+    - Content requests are limited to the production environment publish tier for AEMCS.  You are free to download and analyze any CDN logs with these dashboards, however focus on production publish when using the Content Request Dashboard.
+    - The files downloaded from Cloud Manager are based on UTC time zone.  The dashboards are based on local machine time zone.  This may introduce some misalignment during analysis, and you may need to introduce a wider range in the dashboard time filter to see all requests.
+
+- **NOTE**: additional fields must be logged in order for the Content Request Dashboard to be accurate.  This is configured per the [instructions on Experience League](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/content-delivery/cdn-configuring-traffic#logproperty) and the additional fields are included in this syntax:
+
+```
+requestTransformations:
+  rules:
+    - name: log-on-request
+      when: "*"
+      actions:
+        - type: set
+          logProperty: req_ref
+          value:
+            reqHeader: referer
+        - type: set
+          logProperty: bot_name
+          value:
+            reqProperty: botName
+```
+
+If the additional fields `req_ref` and `bot_name` are not logged, the Content Request Dashboard will still function but the counts may be inaccurate because the filters will not have all the necessary info.
 
 ## How to set up the ELK Docker container{#how-to-setup-the-elk-docker-container}
 
